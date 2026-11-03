@@ -63,8 +63,8 @@ export async function getProducts(): Promise<Product[]> {
 export async function getConfig(): Promise<Config> {
     const rows = await fetchSheet('config')
     const defaults: Config = {
-        nombre: 'Qollqastore',
-        descripcion: 'Tu tienda Online Gratis',
+        nombre: 'NO DRAMA SKIN',
+        descripcion: 'Less drama. Better skincare.',
         color_primario: '#6366f1',
         whatsapp: '',
         instagram: '',
