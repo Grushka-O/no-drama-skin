@@ -36,36 +36,51 @@ const disponibles = products;
 
     <!-- Filtros y búsqueda -->
     <div
+        id="catalog-filter-bar"
         class="sticky top-16 z-30 border-b"
         style="background: var(--bg); border-color: var(--border);"
     >
         <div
-            class="max-w-7xl mx-auto px-[5%] py-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
+            class="max-w-7xl mx-auto px-[5%] py-2 flex flex-col md:flex-row gap-2 md:items-center md:justify-between"
         >
-            <!-- Categorías con scroll horizontal -->
-            <div
-                class="flex flex-wrap gap-x-2 gap-y-3 pb-1 md:pb-0"
-                style="scrollbar-width: none;"
-            >
-                {
-                    categories.map((cat) => (
-                        <button
-                            class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
-                            data-cat={cat}
-                            style={`border-color: var(--border); background: ${cat === "Todos" ? "var(--color-primary)" : "transparent"}; color: ${cat === "Todos" ? "#fff" : "var(--text-muted)"}; cursor: pointer;`}
-                        >
-                            {cat}
-                        </button>
-                    ))
-                }
-
+            <!-- Categorías desplegables en móvil y escritorio -->
+            <div class="category-filter w-full md:flex-1">
                 <button
-                    class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
-                    data-cat="Agotados"
-                    style="border-color: var(--border); background: transparent; color: var(--text-muted); cursor: pointer;"
+                    id="category-toggle"
+                    type="button"
+                    class="category-toggle w-full md:max-w-sm items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-left text-sm font-bold"
+                    aria-controls="category-list"
+                    aria-expanded="false"
+                    style="border-color: var(--border); background: var(--bg-card); color: var(--text);"
                 >
-                    AGOTADOS
+                    <span>Categoría: <span id="active-category">Todos</span></span>
+                    <span aria-hidden="true">⌄</span>
                 </button>
+                <div
+                    id="category-list"
+                    class="category-list flex-wrap gap-x-2 gap-y-3"
+                    style="scrollbar-width: none;"
+                >
+                    {
+                        categories.map((cat) => (
+                            <button
+                                class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
+                                data-cat={cat}
+                                style={`border-color: var(--border); background: ${cat === "Todos" ? "var(--color-primary)" : "transparent"}; color: ${cat === "Todos" ? "#fff" : "var(--text-muted)"}; cursor: pointer;`}
+                            >
+                                {cat}
+                            </button>
+                        ))
+                    }
+
+                    <button
+                        class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
+                        data-cat="Agotados"
+                        style="border-color: var(--border); background: transparent; color: var(--text-muted); cursor: pointer;"
+                    >
+                        AGOTADOS
+                    </button>
+                </div>
             </div>
 
             <!-- Búsqueda -->
@@ -73,7 +88,7 @@ const disponibles = products;
                 id="search"
                 type="text"
                 placeholder="Buscar productos..."
-                class="w-full md:w-72 px-5 py-2.5 rounded-full text-sm outline-none border transition-all duration-200"
+                class="w-full md:w-72 md:shrink-0 px-5 py-2.5 rounded-full text-sm outline-none border transition-all duration-200"
                 style="background: var(--bg-card); border-color: var(--border); color: var(--text);"
             />
         </div>
@@ -125,6 +140,61 @@ const disponibles = products;
     <ProductModal />
     <WhatsAppButton whatsapp={config.whatsapp} />
 
+    <style>
+        .category-filter {
+            position: relative;
+        }
+
+        .category-list {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            z-index: 40;
+            width: min(32rem, calc(100vw - 2rem));
+            max-height: min(55vh, 24rem);
+            overflow-y: auto;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            background: var(--bg);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+        }
+
+        .category-toggle {
+            display: flex;
+        }
+
+        .category-list.is-open {
+            display: flex;
+        }
+
+        :global(#site-navbar) {
+            transition: transform 220ms ease;
+        }
+
+        :global(#site-navbar.catalog-navbar-hidden) {
+            transform: translateY(-100%);
+        }
+
+        :global(#catalog-filter-bar) {
+            transition: top 220ms ease;
+        }
+
+        @media (max-width: 767px) {
+            .category-list {
+                width: 100%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            :global(#site-navbar),
+            :global(#catalog-filter-bar) {
+                transition: none;
+            }
+        }
+    </style>
+
     <script define:vars={{ moneda: config.moneda, whatsapp: config.whatsapp }}>
         const PRIMARY = getComputedStyle(document.documentElement)
             .getPropertyValue("--color-primary")
@@ -132,12 +202,17 @@ const disponibles = products;
 
         const allCards = Array.from(document.querySelectorAll(".product-card"));
         const catBtns = document.querySelectorAll(".cat-btn");
+        const categoryToggle = document.getElementById("category-toggle");
+        const categoryList = document.getElementById("category-list");
+        const activeCategoryLabel = document.getElementById("active-category");
         const searchInput = document.getElementById("search");
         const countEl = document.getElementById("count");
         const emptyEl = document.getElementById("empty");
         const gridEl = document.getElementById("grid");
         const sentinel = document.getElementById("sentinel");
         const loadingEl = document.getElementById("loading");
+        const siteNavbar = document.getElementById("site-navbar");
+        const catalogFilterBar = document.getElementById("catalog-filter-bar");
 
         const PAGE_SIZE = 20;
         let activeCat = "Todos";
@@ -145,6 +220,65 @@ const disponibles = products;
         let visibleCount = PAGE_SIZE;
 
         allCards.forEach((card) => (card.style.display = "none"));
+
+        categoryToggle?.addEventListener("click", () => {
+            const isOpen = categoryList.classList.toggle("is-open");
+            categoryToggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        let previousScrollY = window.scrollY;
+        let scrollTicking = false;
+
+        function setNavbarVisible(visible) {
+            if (siteNavbar) {
+                siteNavbar.classList.toggle(
+                    "catalog-navbar-hidden",
+                    !visible,
+                );
+                if (visible) {
+                    siteNavbar.removeAttribute("inert");
+                } else if (!siteNavbar.contains(document.activeElement)) {
+                    siteNavbar.setAttribute("inert", "");
+                }
+            }
+
+            if (catalogFilterBar) {
+                catalogFilterBar.style.top = visible ? "" : "0px";
+            }
+        }
+
+        siteNavbar?.addEventListener("focusout", () => {
+            if (
+                siteNavbar.classList.contains("catalog-navbar-hidden") &&
+                !siteNavbar.contains(document.activeElement)
+            ) {
+                siteNavbar.setAttribute("inert", "");
+            }
+        });
+
+        window.addEventListener(
+            "scroll",
+            () => {
+                if (scrollTicking) return;
+                scrollTicking = true;
+
+                window.requestAnimationFrame(() => {
+                    const currentScrollY = window.scrollY;
+                    const scrollingDown = currentScrollY > previousScrollY + 5;
+                    const scrollingUp = currentScrollY < previousScrollY - 5;
+
+                    if (currentScrollY < 120 || scrollingUp) {
+                        setNavbarVisible(true);
+                    } else if (scrollingDown) {
+                        setNavbarVisible(false);
+                    }
+
+                    previousScrollY = currentScrollY;
+                    scrollTicking = false;
+                });
+            },
+            { passive: true },
+        );
 
         function getFiltered() {
             return allCards.filter((card) => {
@@ -218,6 +352,9 @@ const disponibles = products;
         catBtns.forEach((btn) => {
             btn.addEventListener("click", () => {
                 activeCat = btn.getAttribute("data-cat") || "Todos";
+                if (activeCategoryLabel) {
+                    activeCategoryLabel.textContent = btn.textContent.trim();
+                }
                 visibleCount = PAGE_SIZE;
                 catBtns.forEach((b) => {
                     b.style.background = "transparent";
@@ -227,6 +364,8 @@ const disponibles = products;
                 btn.style.background = PRIMARY;
                 btn.style.color = "#fff";
                 btn.style.borderColor = PRIMARY;
+                categoryList?.classList.remove("is-open");
+                categoryToggle?.setAttribute("aria-expanded", "false");
                 render();
             });
         });
