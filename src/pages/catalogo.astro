@@ -42,30 +42,44 @@ const disponibles = products;
         <div
             class="max-w-7xl mx-auto px-[5%] py-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
         >
-            <!-- Categorías con scroll horizontal -->
-            <div
-                class="flex flex-wrap gap-x-2 gap-y-3 pb-1 md:pb-0"
-                style="scrollbar-width: none;"
-            >
-                {
-                    categories.map((cat) => (
-                        <button
-                            class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
-                            data-cat={cat}
-                            style={`border-color: var(--border); background: ${cat === "Todos" ? "var(--color-primary)" : "transparent"}; color: ${cat === "Todos" ? "#fff" : "var(--text-muted)"}; cursor: pointer;`}
-                        >
-                            {cat}
-                        </button>
-                    ))
-                }
-
+            <!-- Categorías: desplegables en móvil, visibles en escritorio -->
+            <div class="category-filter">
                 <button
-                    class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
-                    data-cat="Agotados"
-                    style="border-color: var(--border); background: transparent; color: var(--text-muted); cursor: pointer;"
+                    id="category-toggle"
+                    type="button"
+                    class="category-toggle w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-bold"
+                    aria-controls="category-list"
+                    aria-expanded="false"
+                    style="border-color: var(--border); background: var(--bg-card); color: var(--text);"
                 >
-                    AGOTADOS
+                    <span>Categoría: <span id="active-category">Todos</span></span>
+                    <span aria-hidden="true">⌄</span>
                 </button>
+                <div
+                    id="category-list"
+                    class="category-list flex flex-wrap gap-x-2 gap-y-3 pb-1 md:pb-0"
+                    style="scrollbar-width: none;"
+                >
+                    {
+                        categories.map((cat) => (
+                            <button
+                                class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
+                                data-cat={cat}
+                                style={`border-color: var(--border); background: ${cat === "Todos" ? "var(--color-primary)" : "transparent"}; color: ${cat === "Todos" ? "#fff" : "var(--text-muted)"}; cursor: pointer;`}
+                            >
+                                {cat}
+                            </button>
+                        ))
+                    }
+
+                    <button
+                        class="cat-btn shrink-0 text-sm font-bold px-5 py-2.5 rounded-full border transition-all duration-200"
+                        data-cat="Agotados"
+                        style="border-color: var(--border); background: transparent; color: var(--text-muted); cursor: pointer;"
+                    >
+                        AGOTADOS
+                    </button>
+                </div>
             </div>
 
             <!-- Búsqueda -->
@@ -125,6 +139,30 @@ const disponibles = products;
     <ProductModal />
     <WhatsAppButton whatsapp={config.whatsapp} />
 
+    <style>
+        .category-list {
+            display: flex;
+        }
+
+        .category-toggle {
+            display: none;
+        }
+
+        @media (max-width: 767px) {
+            .category-toggle {
+                display: flex;
+            }
+
+            .category-list {
+                display: none;
+            }
+
+            .category-list.is-open {
+                display: flex;
+            }
+        }
+    </style>
+
     <script define:vars={{ moneda: config.moneda, whatsapp: config.whatsapp }}>
         const PRIMARY = getComputedStyle(document.documentElement)
             .getPropertyValue("--color-primary")
@@ -132,6 +170,9 @@ const disponibles = products;
 
         const allCards = Array.from(document.querySelectorAll(".product-card"));
         const catBtns = document.querySelectorAll(".cat-btn");
+        const categoryToggle = document.getElementById("category-toggle");
+        const categoryList = document.getElementById("category-list");
+        const activeCategoryLabel = document.getElementById("active-category");
         const searchInput = document.getElementById("search");
         const countEl = document.getElementById("count");
         const emptyEl = document.getElementById("empty");
@@ -145,6 +186,11 @@ const disponibles = products;
         let visibleCount = PAGE_SIZE;
 
         allCards.forEach((card) => (card.style.display = "none"));
+
+        categoryToggle?.addEventListener("click", () => {
+            const isOpen = categoryList.classList.toggle("is-open");
+            categoryToggle.setAttribute("aria-expanded", String(isOpen));
+        });
 
         function getFiltered() {
             return allCards.filter((card) => {
@@ -218,6 +264,9 @@ const disponibles = products;
         catBtns.forEach((btn) => {
             btn.addEventListener("click", () => {
                 activeCat = btn.getAttribute("data-cat") || "Todos";
+                if (activeCategoryLabel) {
+                    activeCategoryLabel.textContent = btn.textContent.trim();
+                }
                 visibleCount = PAGE_SIZE;
                 catBtns.forEach((b) => {
                     b.style.background = "transparent";
@@ -227,6 +276,10 @@ const disponibles = products;
                 btn.style.background = PRIMARY;
                 btn.style.color = "#fff";
                 btn.style.borderColor = PRIMARY;
+                if (window.matchMedia("(max-width: 767px)").matches) {
+                    categoryList?.classList.remove("is-open");
+                    categoryToggle?.setAttribute("aria-expanded", "false");
+                }
                 render();
             });
         });
