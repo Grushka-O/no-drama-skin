@@ -135,7 +135,7 @@ const { reservas, whatsapp } = Astro.props
 
       if (precioEl) {
         if (r.precio) {
-          precioEl.textContent = `S/. ${Number(r.precio).toLocaleString()}`
+          precioEl.textContent = `€ ${Number(r.precio).toLocaleString()}`
           precioEl.style.color = '#fff'
           precioEl.parentElement.style.display = 'flex'
         } else {
